@@ -34,7 +34,8 @@ public class StudentController {
 	
 	@PostMapping("/login")
 	public ResponseEntity<?>loginUser(@RequestBody LoginRequestDTO dto){
-		 return null;
+		String token=userService.login(dto);
+		 return new ResponseEntity<String>(token,HttpStatus.OK);
 	}
 
 }

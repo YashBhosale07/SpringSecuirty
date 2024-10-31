@@ -5,14 +5,15 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import in.yash.security.dto.LoginRequestDTO;
 import in.yash.security.dto.SignUpDTO;
 import in.yash.security.dto.SignUpResponseDTO;
+import in.yash.security.exceptionClasses.IncorrectUserDetails;
 import in.yash.security.exceptionClasses.UserAlreadyPresentException;
+import in.yash.security.jwtService.JwtService;
 import in.yash.security.model.User;
 import in.yash.security.repository.UserRepository;
 import in.yash.security.service.UserService;
@@ -33,6 +34,8 @@ public class UserServiceImpl implements UserService {
 	 @Autowired
 	 private AuthenticationManager authenticationManager;
 	 
+	 @Autowired JwtService jwtService;
+	 
 	@Override
 	public SignUpResponseDTO signUp(SignUpDTO signUpDTO) {
 		if (userRepository.findByEmail(signUpDTO.getEmail()).isPresent()) {
@@ -48,13 +51,18 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	public String login(LoginRequestDTO dto) {
-        UsernamePasswordAuthenticationToken authenticationToken = 
-                new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getPassword());
-        org.springframework.security.core.Authentication authentication = authenticationManager.authenticate(authenticationToken);
-      
-        return "Login successful!";
-		
+	public String login(LoginRequestDTO dto)  {
+	    try {
+	        UsernamePasswordAuthenticationToken authenticationToken = 
+	                new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getPassword());
+	        org.springframework.security.core.Authentication authentication = authenticationManager.authenticate(authenticationToken);
+	        UserDetails details = (UserDetails) authentication.getPrincipal();
+	        String token = jwtService.generateToken(details.getUsername());
+	        return token;
+	    } catch (Exception e) {
+	        throw new IncorrectUserDetails("Incorrect username or password");
+	    }
 	}
+
 
 }
